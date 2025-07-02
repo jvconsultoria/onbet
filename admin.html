@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Administrador | OnBet</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      color: #333;
+    }
+
+    header {
+      background-color: #8b02029f;
+      color: white;
+      padding: 1rem 2rem;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background-color: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.05);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      font-size: 1.1rem;
+    }
+
+    .card .value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-top: 0.5rem;
+    }
+
+    .filter-section {
+      margin-bottom: 2rem;
+    }
+
+    .filter-section label {
+      margin-right: 0.5rem;
+    }
+
+    .add-client-btn {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      text-decoration: none;
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    table th, table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .status {
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: white;
+    }
+
+    .red { background-color: #dc3545; }
+    .green { background-color: #28a745; }
+    .yellow { background-color: #ffc107; color: black; }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.3);
+      z-index: 99;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 15%;
+      left: 50%;
+      transform: translate(-50%, 0);
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      z-index: 100;
+      width: 320px;
+    }
+
+    .modal input {
+      width: 100%;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .modal button {
+      width: 100%;
+      padding: 0.6rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Painel do Administrador|OnBet</h1>
+  </header>
+
+  <div class="container">
+    <button class="add-client-btn" onclick="abrirModal()">+ Adicionar Cliente</button>
+
+    <button class="add-client-btn" onclick="gerarClientesDuplicados()">+ Gerar Clientes Duplicados</button>
+
+    <button onclick="logout()" style="
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 16px;
+      background-color: #ffffff;
+      color: rgb(0, 0, 0);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    ">
+      Logout
+    </button>
+
+    <script>
+      function logout() {
+        localStorage.clear();
+        window.location.href = 'index.html';
+      }
+    </script>
+
+    <button class="add-client-btn" onclick="gerarClientesAleatorios()">+ Gerar Clientes Aleatórios</button>
+
+<div class="grid">
+  <div class="card">
+    <h3>Quantidade de Clientes</h3>
+    <div class="value" id="qtd-clientes">0</div>
+  </div>
+  <div class="card">
+    <h3>Clientes Ativos</h3>
+    <div class="value" id="clientes-ativos">0</div>
+  </div>
+  <div class="card">
+    <h3>Clientes Inativos (+7 dias)</h3>
+    <div class="value" id="clientes-inativos">0</div>
+  </div>
+  <div class="card">
+    <h3>Total de Clientes Adicionados</h3>
+    <div class="value" id="clientes-totais">0</div>
+  </div>
+</div>
+
+    <div class="filter-section">
+      <label for="data-inicial">Intervalo(Data):</label>
+      <input type="date" id="data-inicial" name="data-inicial">
+    </div>
+
+<div style="margin-bottom: 1rem;">
+  <label for="filtro-nome">Filtrar por nome:</label>
+  <input type="text" id="filtro-nome" placeholder="Digite o nome do cliente" />
+  <button onclick="filtrarClientes()">Filtrar</button>
+  <button onclick="limparFiltro()">Limpar</button>
+</div>
+
+    <h2>Apostas dos Clientes</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Cliente</th>
+      <th>Último Lançamento</th>
+      <th>Valor Total</th>
+      <th>Status da Última Aposta</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody id="tabela-clientes">
+  </tbody>
+</table>
+
+  <div class="modal-overlay" id="overlay" onclick="fecharModal()"></div>
+  <div class="modal" id="modal">
+    <h3>Adicionar Cliente</h3>
+    <input type="text" id="modal-id" placeholder="ID" readonly>
+    <input type="text" id="modal-nome" placeholder="Nome">
+    <input type="date" id="modal-adesao" placeholder="Data de adesão">
+    <input type="text" id="modal-cpf" placeholder="CPF">
+    <input type="date" id="modal-nascimento" placeholder="Data de nascimento">
+    <input type="number" id="modal-valor" placeholder="Valor de Lançamento">
+    <button onclick="salvarCliente()">Salvar Cliente</button>
+  </div>
+
+  <script>
+    function abrirModal() {
+      const novoId = 'CLI-' + Math.floor(100000 + Math.random() * 900000);
+      document.getElementById('modal-id').value = novoId;
+      document.getElementById('modal-nome').value = '';
+      document.getElementById('modal-adesao').value = '';
+      document.getElementById('modal-cpf').value = '';
+      document.getElementById('modal-nascimento').value = '';
+      document.getElementById('modal-valor').value = '';
+      document.getElementById('overlay').style.display = 'block';
+      document.getElementById('modal').style.display = 'block';
+    }
+    function fecharModal() {
+      document.getElementById('overlay').style.display = 'none';
+      document.getElementById('modal').style.display = 'none';
+    }
+    function salvarCliente() {
+      const nome = document.getElementById('modal-nome').value;
+      const cpf = document.getElementById('modal-cpf').value;
+      const valor = document.getElementById('modal-valor').value;
+      if (!nome || !cpf) {
+        alert('Preencha os campos obrigatórios.');
+        return;
+      }
+      alert(`Cliente "${nome}" cadastrado com sucesso! Valor: R$ ${valor}`);
+      fecharModal();
+    }
+  </script>
+
+  <script>
+    function gerarClientesAleatorios() {
+      const quantidade = 5;
+
+      for (let i = 0; i < quantidade; i++) {
+        const nome = gerarNomeAleatorio();
+        const valor = Math.floor(Math.random() * 1000) + 50;
+        const status = Math.random() < 0.7 ? 'green' : 'yellow';
+
+        const novoCliente = {
+          nome,
+          lancamentos: [
+            {
+              valor,
+              status,
+              data: new Date().toISOString()
+            }
+          ]
+        };
+
+        listaClientes.push(novoCliente);
+      }
+
+      atualizarTabela();
+      verificarDuplicados();
+    }
+
+    function gerarNomeAleatorio() {
+      const vogais = ['a', 'e', 'i', 'o', 'u'];
+      const consoantes = ['b', 'c', 'd', 'f', 'g', 'h', 'j', 'l', 'm', 'n', 'p', 'r', 's', 't', 'v', 'z'];
+      let nome = '';
+      let sobrenome = '';
+
+      const silabasNome = Math.floor(Math.random() * 3) + 2;
+      for (let i = 0; i < silabasNome; i++) {
+        nome += consoantes[Math.floor(Math.random() * consoantes.length)] +
+                vogais[Math.floor(Math.random() * vogais.length)];
+      }
+
+      const silabasSobrenome = Math.floor(Math.random() * 3) + 2;
+      for (let i = 0; i < silabasSobrenome; i++) {
+        sobrenome += consoantes[Math.floor(Math.random() * consoantes.length)] +
+                    vogais[Math.floor(Math.random() * vogais.length)];
+      }
+
+      nome = nome.charAt(0).toUpperCase() + nome.slice(1);
+      sobrenome = sobrenome.charAt(0).toUpperCase() + sobrenome.slice(1);
+
+      return `${nome} ${sobrenome}`;
+    }
+</script>
+
+  <script>
+  let listaClientes = [];
+  function abrirModal() {
+    const novoId = 'CLI-' + Math.floor(100000 + Math.random() * 900000);
+    document.getElementById('modal-id').value = novoId;
+    document.getElementById('modal-nome').value = '';
+    document.getElementById('modal-adesao').value = '';
+    document.getElementById('modal-cpf').value = '';
+    document.getElementById('modal-nascimento').value = '';
+    document.getElementById('modal-valor').value = '';
+    document.getElementById('overlay').style.display = 'block';
+    document.getElementById('modal').style.display = 'block';
+  }
+
+  function salvarCliente() {
+    const nome = document.getElementById('modal-nome').value;
+    const cpf = document.getElementById('modal-cpf').value;
+    const valor = parseFloat(document.getElementById('modal-valor').value) || 0;
+    if (!nome || !cpf) {
+      alert('Preencha os campos obrigatórios.');
+      return;
+    }
+
+    const novoCliente = {
+      nome,
+      lancamentos: [{
+        valor,
+        status: 'green',
+        data: new Date().toISOString()
+      }]
+    };
+  listaClientes.push(novoCliente);
+  atualizarTabela();
+  localStorage.setItem('clientes', JSON.stringify(listaClientes));
+  verificarDuplicados();
+  fecharModal();
+}
+
+  function renderizarTabela(lista) {
+  const tbody = document.getElementById('tabela-clientes');
+  tbody.innerHTML = '';
+
+  if (lista.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4">Nenhum cliente encontrado.</td></tr>`;
+    return;
+  }
+
+  lista.forEach(cliente => {
+    const total = cliente.lancamentos.reduce((soma, l) => soma + l.valor, 0);
+    const ultima = cliente.lancamentos[cliente.lancamentos.length - 1];
+
+    const linha = document.createElement('tr');
+    linha.innerHTML = `
+      <td>${cliente.nome}</td>
+      <td>${new Date(ultima.data).toLocaleDateString()}</td>
+      <td>R$ ${total.toFixed(2)}</td>
+      <td>
+        <select onchange="atualizarStatus('${cliente.nome}', this.value)" class="status ${ultima.status}">
+          <option value="green" ${ultima.status === 'green' ? 'selected' : ''}>Green</option>
+          <option value="yellow" ${ultima.status === 'yellow' ? 'selected' : ''}>Yellow</option>
+          <option value="red" ${ultima.status === 'red' ? 'selected' : ''}>Red</option>
+        </select>
+      </td>
+    `;
+
+
+    tbody.appendChild(linha);
+  });
+}
+
+function atualizarTabela() {
+  const tbody = document.getElementById('tabela-clientes');
+  tbody.innerHTML = '';
+
+  listaClientes.forEach(cliente => {
+    const total = cliente.lancamentos.reduce((soma, l) => soma + l.valor, 0);
+    const ultima = cliente.lancamentos[cliente.lancamentos.length - 1];
+
+    const linha = document.createElement('tr');
+    linha.innerHTML = `
+      <td>${cliente.nome}</td>
+      <td>${new Date(ultima.data).toLocaleDateString()}</td>
+      <td>R$ ${total.toFixed(2)}</td>
+      
+      <td>
+      <select onchange="atualizarStatus('${cliente.nome}', this.value)" class="status ${ultima.status}">
+      <option value="green" ${ultima.status === 'green' ? 'selected' : ''}>Green</option>
+      <option value="yellow" ${ultima.status === 'yellow' ? 'selected' : ''}>Yellow</option>
+      <option value="red" ${ultima.status === 'red' ? 'selected' : ''}>Red</option>
+      </select>
+      </td>
+      
+            <td>
+      <button onclick="excluirCliente(${listaClientes.indexOf(cliente)})" style="
+        background-color: transparent;
+        border: none;
+        color: #dc3545;
+        font-size: 1.2rem;
+        cursor: pointer;
+      " title="Excluir cliente">
+        🗑️
+      </button>
+      </td>
+
+      `;
+
+    tbody.appendChild(linha);
+  });
+
+  document.getElementById('qtd-clientes').textContent = listaClientes.length;
+  document.getElementById('clientes-totais').textContent = listaClientes.length;
+
+  let ativos = 0;
+  const hoje = new Date();
+  listaClientes.forEach(cliente => {
+    const ultima = cliente.lancamentos[cliente.lancamentos.length - 1];
+    const dias = (hoje - new Date(ultima.data)) / (1000 * 60 * 60 * 24);
+    if (dias <= 7) ativos++;
+  });
+
+  const inativos = listaClientes.length - ativos;
+  document.getElementById('clientes-ativos').textContent = ativos;
+  document.getElementById('clientes-inativos').textContent = inativos;
+}
+
+function atualizarStatus(nomeCliente, novoStatus) {
+  const cliente = listaClientes.find(c => c.nome === nomeCliente);
+  if (!cliente || cliente.lancamentos.length === 0) return;
+
+  const ultima = cliente.lancamentos[cliente.lancamentos.length - 1];
+  ultima.status = novoStatus;
+
+  atualizarTabela();
+  mostrarMensagemStatus();
+}
+
+function mostrarMensagemStatus() {
+  const msg = document.getElementById('mensagem-status');
+  msg.style.display = 'block';
+
+  setTimeout(() => {
+    msg.style.display = 'none';
+  }, 2000);
+}
+
+</script>
+
+  <script>
+      function excluirCliente(index) {
+      const nome = listaClientes[index].nome;
+      if (confirm(`Tem certeza que deseja excluir o cliente "${nome}"?`)) {
+        listaClientes.splice(index, 1);
+        atualizarTabela();
+        localStorage.setItem('clientes', JSON.stringify(listaClientes));
+        verificarDuplicados();
+        mostrarToast(`Cliente "${nome}" excluído com sucesso.`, '#dc3545');
+      }
+    }
+  </script>
+
+  <script>
+      function verificarDuplicados() {
+  const nomes = {};
+  const duplicados = {};
+
+listaClientes.forEach((cliente, index) => {
+  const nome = cliente.nome.toLowerCase();
+
+  if (!duplicados[nome]) {
+    duplicados[nome] = [];
+  }
+
+  duplicados[nome].push(index);
+});
+
+for (const nome in duplicados) {
+  if (duplicados[nome].length < 2) {
+    delete duplicados[nome];
+  }
+}
+  exibirDuplicados(duplicados);
+}
+  </script>
+
+  <script>
+      function exibirDuplicados(duplicados) {
+  const caixa = document.getElementById('alerta-duplicados');
+  const lista = document.getElementById('lista-duplicados');
+  lista.innerHTML = '';
+
+  const nomesDuplicados = Object.keys(duplicados);
+  if (nomesDuplicados.length === 0) {
+    caixa.style.display = 'none';
+    return;
+  }
+
+  nomesDuplicados.forEach(nome => {
+    const linha = document.createElement('div');
+    linha.style.marginBottom = '10px';
+
+    linha.innerHTML = `
+      <div><strong>${nome}</strong> (${duplicados[nome].length} entradas)</div>
+    `;
+
+    duplicados[nome].forEach(index => {
+      const cliente = listaClientes[index];
+      const clienteEl = document.createElement('div');
+      clienteEl.style.margin = '4px 0 8px 12px';
+      clienteEl.style.padding = '6px';
+      clienteEl.style.borderLeft = '3px solid #ffc107';
+      clienteEl.style.background = '#fffde6';
+
+      clienteEl.innerHTML = `
+        <code>${cliente.nome} • Valor total: R$ ${cliente.lancamentos.reduce((t, l) => t + l.valor, 0).toFixed(2)}</code><br>
+        <button onclick="manterCliente(${index})" style="margin-right: 8px;">✅ Manter</button>
+        <button onclick="excluirCliente(${index})">🗑️ Excluir</button>
+      `;
+
+      linha.appendChild(clienteEl);
+    });
+
+    lista.appendChild(linha);
+  });
+
+  caixa.style.display = 'block';
+}
+  </script>
+
+  <script>
+          function manterCliente(index) {
+      mostrarToast(`Cliente mantido: ${listaClientes[index].nome}`, '#28a745');
+      verificarDuplicados();
+    }
+
+    function excluirCliente(index) {
+      const nome = listaClientes[index].nome;
+      listaClientes.splice(index, 1);
+      atualizarTabela();
+      mostrarToast(`Cliente excluído: ${nome}`, '#dc3545');
+      verificarDuplicados();
+    }
+  </script>
+
+
+<script>
+function filtrarClientes() {
+  const nomeFiltro = document.getElementById('filtro-nome').value.trim().toLowerCase();
+  const tbody = document.getElementById('tabela-clientes');
+  tbody.innerHTML = '';
+
+  const clientesFiltrados = listaClientes.filter(cliente =>
+    cliente.nome.toLowerCase().includes(nomeFiltro)
+  );
+
+  if (clientesFiltrados.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4">Nenhum cliente encontrado.</td></tr>`;
+  } else {
+    clientesFiltrados.forEach(cliente => {
+      const total = cliente.lancamentos.reduce((soma, l) => soma + l.valor, 0);
+      const ultima = cliente.lancamentos[cliente.lancamentos.length - 1];
+
+      const linha = document.createElement('tr');
+      linha.innerHTML = `
+        <td>${cliente.nome}</td>
+        <td>${new Date(ultima.data).toLocaleDateString()}</td>
+        <td>R$ ${total.toFixed(2)}</td>
+        <td><span class="status ${ultima.status}">
+          ${ultima.status.charAt(0).toUpperCase() + ultima.status.slice(1)}
+        </span></td>
+      `;
+      tbody.appendChild(linha);
+    });
+  }
+}
+
+  function limparFiltro() {
+    document.getElementById('filtro-nome').value = '';
+    atualizarTabela();
+  }
+
+</script>
+
+  <script>
+        function gerarClientesDuplicados() {
+      const nomesDuplicados = ['João Silva', 'Ana Souza', 'Carlos Lima'];
+
+      nomesDuplicados.forEach(nome => {
+        for (let i = 0; i < 2; i++) {
+          const valor = Math.floor(Math.random() * 1000) + 10;
+          const status = Math.random() < 0.5 ? 'green' : 'yellow';
+
+          const clienteDuplicado = {
+            nome,
+            lancamentos: [
+              {
+                valor,
+                status,
+                data: new Date().toISOString()
+              }
+            ]
+          };
+
+          listaClientes.push(clienteDuplicado);
+        }
+      });
+
+      atualizarTabela();
+      mostrarToast('Clientes duplicados criados para teste.', '#ffc107');
+      verificarDuplicados();
+
+    }
+  </script>
+
+<div id="mensagem-status" style="
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #28a745;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: bold;
+  display: none;
+  z-index: 999;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  ">
+  ✅ Status atualizado!
+</div>
+
+<div id="alerta-duplicados" style="
+  display: none;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  padding: 16px;
+  border-radius: 6px;
+  color: #856404;
+  margin-top: 20px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+">
+  <strong>⚠ Clientes duplicados encontrados:</strong>
+  <div id="lista-duplicados"></div>
+</div>
+
+<div id="toast-alerta" style="
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #333;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 9999;
+  font-family: sans-serif;
+  pointer-events: none;
+"></div>
+
+<script>
+  function mostrarToast(mensagem, cor = '#333') {
+    const toast = document.getElementById('toast-alerta');
+    if (!toast) return;
+    toast.style.backgroundColor = cor;
+    toast.textContent = mensagem;
+    toast.style.opacity = '1';
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+    }, 3000);
+  }
+</script>
+
+</body>
+</html>
